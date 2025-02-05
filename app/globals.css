@@ -2,20 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@layer utilities {
+  .snap {
+    scroll-snap-type: y mandatory;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  .snap-start {
+    scroll-snap-align: start;
+  }
+
+  .text-balance {
+    text-wrap: balance;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+html {
+  scroll-behavior: smooth;
 }
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  @apply bg-white text-black;
+}
+
+/* Hide scrollbars while maintaining functionality */
+* {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+/* Chrome, Safari and Opera */
+*::-webkit-scrollbar {
+  display: none;
+}
+
+html, body {
+  overflow: hidden;
+  height: 100%;
+}
+
+.blur-transition {
+  transition: filter 0.5s ease-in-out;
+}
+
+.blur-transition:hover {
+  filter: blur(0px);
+}
+
+.blur-out {
+  filter: blur(10px);
+}
+
+/* Navigation tab styles */
+.tab-shadow {
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes tabHover {
+  0% { transform: translateX(-12rem) scale(1); }
+  100% { transform: translateX(-0.5rem) scale(1.05); }
+}
+
+.tab-hover-left:hover {
+  animation: tabHover 0.3s ease-out forwards;
+}
+
+.tab-hover-right:hover {
+  animation: tabHover 0.3s ease-out forwards;
+  transform: scaleX(-1);
+}
+
+.grain {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.15;
+  pointer-events: none;
+}
+
