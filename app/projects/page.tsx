@@ -63,18 +63,6 @@ const projects = [
     link: "https://www.youtube.com/watch?v=jH-M2P9QZt4&ab_channel=Rento",
   },
   {
-    id: 3,
-    title: "The Video Call",
-    description:
-      "The Video Call is a ad-like short film made for the promotion of 'Local Hungama', a local flee market event! The ad was directed, shot and edited in a timespan of 2 days.",
-    className: "col-span-1",
-    thumbnail:
-      "https://ucfjczwjjbycuglmmbay.supabase.co/storage/v1/object/public/Media/img/videocall2.png",
-    video:
-      "https://ucfjczwjjbycuglmmbay.supabase.co/storage/v1/object/public/Media//thevideocall_bit.mov", // Add video URL
-    link: "https://youtu.be/D5Iu0Welo0w?si=PWFceifV6Drx6dnH",
-  },
-  {
     id: 4,
     title: "The Feud",
     description:
@@ -87,11 +75,23 @@ const projects = [
     link: "https://youtu.be/lQg_doe010Q?si=MwXrV8o0bHZ5dAys",
   },
   {
+    id: 3,
+    title: "The Video Call",
+    description:
+      "The Video Call is a short-film-esqe advertisement made for the promotion of 'Local Hungama', a local flee market event! The Ad was directed, shot and edited in a timespan of 2 days.",
+    className: "col-span-2",
+    thumbnail:
+      "https://ucfjczwjjbycuglmmbay.supabase.co/storage/v1/object/public/Media/img/videocall2.png",
+    video:
+      "https://ucfjczwjjbycuglmmbay.supabase.co/storage/v1/object/public/Media//thevideocall_bit.mov", // Add video URL
+    link: "https://youtu.be/D5Iu0Welo0w?si=PWFceifV6Drx6dnH",
+  },
+  {
     id: 5,
     title: "52C- Short Film",
     description:
       "52C is a sci-fi short film directed by Manas Praneeth, along with the team of 'Veteran Originals'. I worked as the Cinematographer and DI for this short film.",
-    className: "col-span-1",
+    className: "col-span-2",
     thumbnail:
       "https://ucfjczwjjbycuglmmbay.supabase.co/storage/v1/object/public/Media/img/52c.png",
     video:
