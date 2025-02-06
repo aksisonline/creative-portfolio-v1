@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
-import React, { useState, useRef, useEffect, JSX } from "react";
+import React, { useState, useRef, useEffect, JSX, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -14,10 +14,14 @@ type Card = {
   link?: string; // Add link property
 };
 
+// Add this outside of components (module scope)
+const videoCache = new Map<number, boolean>();
+
 export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
   const [selected, setSelected] = useState<Card | null>(null);
   const [lastSelected, setLastSelected] = useState<Card | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
 
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
@@ -44,7 +48,12 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
   return (
     <div ref={containerRef} className="w-full h-full p-10 grid grid-cols-2 md:grid-cols-3 max-w-7xl mx-auto gap-4 relative">
       {cards.map((card, i) => (
-        <div key={i} className={cn(card.className, "")}>
+        <div 
+          key={i} 
+          className={cn(card.className, "")}
+          onMouseEnter={() => setHoveredCard(card.id)}
+          onMouseLeave={() => setHoveredCard(null)}
+        >
           <motion.div
             onClick={(e) => {
               e.stopPropagation();
@@ -61,6 +70,10 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
             )}
             layoutId={`card-${card.id}`}
           >
+            {/* Preload video when hovering */}
+            {hoveredCard === card.id && !videoCache.get(card.id) && (
+              <link rel="preload" as="video" href={card.video} />
+            )}
             {selected?.id === card.id && (
               <SelectedCard 
                 selected={selected} 
@@ -84,20 +97,35 @@ const ImageComponent = ({ card, selected, onClose }: {
   selected?: boolean;
   onClose?: () => void;
 }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const mainVideoRef = useRef<HTMLVideoElement>(null);
+  const bgVideoRef = useRef<HTMLVideoElement>(null);
   const [isPortrait, setIsPortrait] = useState(false);
+  const [isReady, setIsReady] = useState(!!videoCache.get(card.id));
 
   useEffect(() => {
-    if (videoRef.current) {
-      const handleLoadedMetadata = () => {
-        if (videoRef.current) {
-          setIsPortrait(videoRef.current.videoHeight > videoRef.current.videoWidth);
+    if (mainVideoRef.current && bgVideoRef.current) {
+      let loadedCount = videoCache.get(card.id) ? 2 : 0;
+      
+      const handleVideoLoad = () => {
+        loadedCount++;
+        if (loadedCount === 2) {
+          videoCache.set(card.id, true);
+          setIsReady(true);
         }
       };
-      videoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
-      return () => videoRef.current?.removeEventListener('loadedmetadata', handleLoadedMetadata);
+
+      const loadVideo = (video: HTMLVideoElement) => {
+        if (video.readyState >= 3) {
+          handleVideoLoad();
+        } else {
+          video.addEventListener('loadeddata', handleVideoLoad, { once: true });
+        }
+      };
+
+      loadVideo(mainVideoRef.current);
+      loadVideo(bgVideoRef.current);
     }
-  }, []);
+  }, [card.id, selected]);
 
   return (
     <motion.div
@@ -107,62 +135,61 @@ const ImageComponent = ({ card, selected, onClose }: {
         !selected && "group hover:scale-105"
       )}
     >
-      {selected && (
-        <>
-          {/* Blurred background video - hidden on mobile */}
-          <div className="absolute inset-0 scale-110 overflow-hidden hidden md:block">
+      {/* Always render videos but keep them hidden until selected */}
+      <div className={cn("absolute inset-0", !selected && "hidden")}>
+        <div className="absolute inset-0 scale-110 overflow-hidden hidden md:block">
+          <video
+            ref={bgVideoRef}
+            playsInline
+            muted
+            loop
+            autoPlay={isReady}
+            className={cn(
+              "w-full h-full object-cover blur-2xl opacity-80",
+              !isReady && "opacity-0"
+            )}
+          >
+            <source src={card.video} type="video/mp4" />
+          </video>
+        </div>
+        <div className="absolute inset-0 flex items-center justify-center bg-black md:bg-transparent">
+          <div className="relative w-full h-full flex items-center justify-center">
+            {/* Edge gradients remain unchanged */}
             <video
-              autoPlay
-              loop
-              muted
+              ref={mainVideoRef}
               playsInline
-              className="w-full h-full object-cover blur-2xl opacity-80"
+              muted
+              loop
+              autoPlay={isReady}
+              className={cn(
+                "relative z-20",
+                "w-full h-full object-cover",
+                "md:object-contain md:max-h-[95%] md:max-w-[95%] md:w-auto md:h-auto",
+                !isReady && "opacity-0"
+              )}
             >
               <source src={card.video} type="video/mp4" />
             </video>
           </div>
-          {/* Main video container */}
-          <div className="absolute inset-0 flex items-center justify-center bg-black md:bg-transparent">
-            <div className="relative w-full h-full flex items-center justify-center">
-              {/* Edge gradients - hidden on mobile */}
-              <div className="absolute inset-0 z-10 hidden md:block">
-                <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20" />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/20" />
-              </div>
-              {/* Main video */}
-              <video
-                ref={videoRef}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className={cn(
-                  "relative z-20",
-                  "w-full h-full object-cover", // Mobile: cover entire screen
-                  "md:object-contain md:max-h-[95%] md:max-w-[95%] md:w-auto md:h-auto" // Desktop: contain with max dimensions
-                )}
-              >
-                <source src={card.video} type="video/mp4" />
-              </video>
-            </div>
+        </div>
+      </div>
+
+      {/* Show thumbnail or loading state */}
+      {(!selected || !isReady) && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="relative w-full h-full">
+            <Image
+              src={card.thumbnail}
+              layout="fill"
+              objectFit="cover"
+              className={cn(
+                "transition duration-200",
+                !selected && "grayscale group-hover:grayscale-0"
+              )}
+              alt="thumbnail"
+            />
           </div>
-        </>
-      )}
-      {!selected && (
-        <>
-          {/* Main thumbnail */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative w-full h-full">
-              <Image
-                src={card.thumbnail}
-                layout="fill"
-                objectFit="cover"
-                className="transition duration-200 grayscale group-hover:grayscale-0"
-                alt="thumbnail"
-              />
-            </div>
-          </div>
-        </>
+        </div>
       )}
     </motion.div>
   );
