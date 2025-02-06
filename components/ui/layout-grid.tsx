@@ -14,14 +14,52 @@ type Card = {
   link?: string; // Add link property
 };
 
-// Add this outside of components (module scope)
+// Enhanced video cache implementation
 const videoCache = new Map<number, boolean>();
+
+// Add this utility function for pre-caching
+const preloadVideo = async (videoUrl: string, cardId: number) => {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.preload = 'auto';
+    video.muted = true;
+    
+    video.onloadeddata = () => {
+      videoCache.set(cardId, true);
+      resolve(true);
+    };
+    
+    video.onerror = () => {
+      console.error(`Failed to preload video ${cardId}`);
+      reject();
+    };
+
+    video.src = videoUrl;
+    // Start loading the video
+    video.load();
+  });
+};
 
 export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
   const [selected, setSelected] = useState<Card | null>(null);
   const [lastSelected, setLastSelected] = useState<Card | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+
+  // Add pre-caching effect
+  useEffect(() => {
+    const preCacheVideos = async () => {
+      const preloadPromises = cards.map(card => 
+        preloadVideo(card.video, card.id)
+          .catch(err => console.warn(`Failed to preload video ${card.id}:`, err))
+      );
+      
+      // Wait for all videos to be cached
+      await Promise.allSettled(preloadPromises);
+    };
+
+    preCacheVideos();
+  }, [cards]);
 
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
