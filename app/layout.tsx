@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation"
 import { RiHome4Line, RiProjectorLine, RiMailLine } from "react-icons/ri"
 import "./globals.css"
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const pages = [
   { path: "/", name: "HOME", icon: <RiHome4Line size={20} /> },
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="en">
+      <SpeedInsights />
       <body className="bg-white">
         <div className="fixed inset-0 grain" />
         <div className="fixed inset-0 flex flex-col md:flex-row">
