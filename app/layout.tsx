@@ -7,7 +7,7 @@ import "./globals.css"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/react"
 import { preloadVideo } from "@/lib/videoCache"
-import { projects } from "./projects/page"
+import { projects } from "@/components/projects"
 
 const pages = [
   { path: "/", name: "HOME", icon: <RiHome4Line size={20} /> },
