@@ -1,10 +1,13 @@
 "use client"
 
+import { useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { RiHome4Line, RiProjectorLine, RiMailLine } from "react-icons/ri"
 import "./globals.css"
-import { SpeedInsights } from "@vercel/speed-insights/next";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/react"
+import { preloadVideo } from "@/lib/videoCache"
+import { projects } from "./projects/page"
 
 const pages = [
   { path: "/", name: "HOME", icon: <RiHome4Line size={20} /> },
@@ -15,6 +18,24 @@ const pages = [
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
+
+  useEffect(() => {
+    const preCacheVideos = async () => {
+      const videosToCache = projects.map(project => ({
+        id: project.id,
+        url: project.video
+      }));
+
+      const preloadPromises = videosToCache.map(video => 
+        preloadVideo(video.url, video.id)
+          .catch(err => console.warn(`Failed to preload video ${video.id}:`, err))
+      );
+      
+      await Promise.allSettled(preloadPromises);
+    };
+
+    preCacheVideos();
+  }, []);
 
   return (
     <html lang="en">

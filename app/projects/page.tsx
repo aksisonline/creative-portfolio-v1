@@ -37,7 +37,7 @@ const ProjectCard = ({ title, description, link, onClose }: {
   );
 };
 
-const projects = [
+export const projects = [
   {
     id: 1,
     title: "3AM - Rento",

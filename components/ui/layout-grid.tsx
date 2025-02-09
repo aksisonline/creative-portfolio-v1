@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, JSX } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { videoCache, preloadVideo } from "@/lib/videoCache";
 
 type Card = {
   id: number;
@@ -14,32 +15,6 @@ type Card = {
   link?: string; // Add link property
 };
 
-// Enhanced video cache implementation
-const videoCache = new Map<number, boolean>();
-
-// Add this utility function for pre-caching
-const preloadVideo = async (videoUrl: string, cardId: number) => {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement('video');
-    video.preload = 'auto';
-    video.muted = true;
-    
-    video.onloadeddata = () => {
-      videoCache.set(cardId, true);
-      resolve(true);
-    };
-    
-    video.onerror = () => {
-      console.error(`Failed to preload video ${cardId}`);
-      reject();
-    };
-
-    video.src = videoUrl;
-    // Start loading the video
-    video.load();
-  });
-};
-
 export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
   const [selected, setSelected] = useState<Card | null>(null);
   const [lastSelected, setLastSelected] = useState<Card | null>(null);
@@ -48,6 +23,7 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
 
   // Add pre-caching effect
   useEffect(() => {
+    // This will now act as a fallback in case videos weren't cached in layout
     const preCacheVideos = async () => {
       const preloadPromises = cards.map(card => 
         preloadVideo(card.video, card.id)
@@ -126,18 +102,35 @@ const ImageComponent = ({ card, selected, onClose }: {
   selected?: boolean;
   onClose?: () => void;
 }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const mainVideoRef = useRef<HTMLVideoElement>(null);
+  const bgVideoRef = useRef<HTMLVideoElement>(null);
   const [isPortrait, setIsPortrait] = useState(false);
 
+  // Add sync effect when videos are playing
   useEffect(() => {
-    if (videoRef.current) {
+    if (!selected) return;
+
+    const syncInterval = setInterval(() => {
+      if (mainVideoRef.current && bgVideoRef.current) {
+        // Only sync if time difference is more than 0.1 seconds
+        if (Math.abs(mainVideoRef.current.currentTime - bgVideoRef.current.currentTime) > 0.1) {
+          bgVideoRef.current.currentTime = mainVideoRef.current.currentTime;
+        }
+      }
+    }, 1000); // Check every second
+
+    return () => clearInterval(syncInterval);
+  }, [selected]);
+
+  useEffect(() => {
+    if (mainVideoRef.current) {
       const handleLoadedMetadata = () => {
-        if (videoRef.current) {
-          setIsPortrait(videoRef.current.videoHeight > videoRef.current.videoWidth);
+        if (mainVideoRef.current) {
+          setIsPortrait(mainVideoRef.current.videoHeight > mainVideoRef.current.videoWidth);
         }
       };
-      videoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
-      return () => videoRef.current?.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      mainVideoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
+      return () => mainVideoRef.current?.removeEventListener('loadedmetadata', handleLoadedMetadata);
     }
   }, []);
 
@@ -154,6 +147,7 @@ const ImageComponent = ({ card, selected, onClose }: {
           {/* Blurred background video - hidden on mobile */}
           <div className="absolute inset-0 scale-110 overflow-hidden hidden md:block">
             <video
+              ref={bgVideoRef}
               autoPlay
               loop
               muted
@@ -173,7 +167,7 @@ const ImageComponent = ({ card, selected, onClose }: {
               </div>
               {/* Main video */}
               <video
-                ref={videoRef}
+                ref={mainVideoRef}
                 autoPlay
                 loop
                 muted
@@ -197,8 +191,8 @@ const ImageComponent = ({ card, selected, onClose }: {
             <div className="relative w-full h-full">
               <Image
                 src={card.thumbnail}
-                layout="fill"
-                objectFit="cover"
+                fill
+                style={{ objectFit: "cover" }}
                 className="transition duration-200 grayscale group-hover:grayscale-0"
                 alt="thumbnail"
               />
